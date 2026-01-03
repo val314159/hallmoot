@@ -8,3 +8,7 @@ clean:
 realclean: clean
 	find -name __pycache__ | xargs rm -fr
 	tree --gitignore -a .
+llm:
+	uv run llm.py
+serve:
+	uv run ws.py
