@@ -1,2 +1,1 @@
-# hallmoot
-LLM with tools
+# haLLMooT - have an LLM with tools!
