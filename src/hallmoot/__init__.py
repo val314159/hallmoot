@@ -31,11 +31,21 @@ class hallmoot:
             self.convo['tools'] = list(self.tools.values())
         else:
             self.tools = self.convo['tools'] = None
+    def _persist_message(self, message) -> None:
+        import yaml
+        with open(self.filename, 'a') as f:
+            f.write('---\n')
+            yaml.dump(message, f)
         pass
     def user_input(self) -> None:
         while 1:
             if ret := input('user> '):
-                self.messages.append({'role': 'user', 'content': ret})
+                if ret.startswith('/m'):
+                    print(self.messages)
+                    continue
+                message = {'role': 'user', 'content': ret}
+                self.messages.append(message)
+                self._persist_message(message)
                 return
             pass
         pass
@@ -59,21 +69,28 @@ class hallmoot:
             self.display_user('<<\n')
             pass
         if not tool_calls:
-            self.messages.append({'role': 'assistant', 'content': '\n'.join(contents)})
+            message = {'role': 'assistant', 'content': '\n'.join(contents)}
+            self.messages.append(message)
+            self._persist_message(message)
             return False
         else:
-            self.messages.append({'role': 'assistant', 'content': '\n'.join(contents),
-                'tool_calls': tool_calls})
+            message = {'role': 'assistant', 'content': '\n'.join(contents), 'tool_calls': [{'function': {'name': tc.function.name, 'arguments': tc.function.arguments}} for tc in tool_calls]}
+            self.messages.append(message)
+            self._persist_message(message)
             for tc in tool_calls:
                 name, arguments = tc.function.name, tc.function.arguments
                 tool = self.tools.get(name, None)
                 if tool is None:
-                    self.messages.append({'role': 'tool', 'content': f'Unknown tool: {name}'})
+                    tool_msg = {'role': 'tool', 'content': f'Unknown tool: {name}'}
+                    self.messages.append(tool_msg)
+                    self._persist_message(tool_msg)
                     continue
                 print("GOT TOOL", tool)
                 results = tool(**arguments)
                 print("GOT RESULT", type(results), results)
-                self.messages.append({'role': 'tool', 'name': name, 'content': results})
+                tool_msg = {'role': 'tool', 'name': name, 'content': results}
+                self.messages.append(tool_msg)
+                self._persist_message(tool_msg)
             return True
         pass
     pass
@@ -82,11 +99,8 @@ class hallmoot:
 def main():
     convo = hallmoot('convos/u.yml')
     while 1:
-        print("!")
         convo.user_input()
-        print("DF")
         while convo.user_round():
-            print("QEQWER")
             pass
         pass
     pass
